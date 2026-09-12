@@ -65,14 +65,20 @@ and manual dispatch. It:
 2. Compiles Android ARMv7 and ARM64 binaries with Go and NDK r27c.
 3. Verifies ELF metadata and pinned jq downloads.
 4. Packages and tests both installation zips and uploads workflow artifacts.
-5. Publishes a release on a matching `v2.1.0.0` tag or manual `publish=true`.
+5. Publishes the latest Release when a main push's latest commit message contains
+   `release` (case-insensitive), on a matching `v2.1.0.0` tag, or manual `publish=true`.
 
 No personal access token is required. The workflow uses `GITHUB_TOKEN` for releases.
-Ordinary pushes and PRs build artifacts without publishing. The fourth module
-version component being nonzero marks a prerelease.
+Pushes without `release` in the latest commit message and PRs only build artifacts.
+The fourth module version component being nonzero marks a prerelease. Bump the
+module version before publishing another version; published versions are not
+silently overwritten.
 
 The online installer needs the corresponding Android CLI release to be published.
-Push the Android `vX.Y.Z-android` tag first, followed by the module release tag.
+Commit and push the Android repository with message `release` first. After that
+Release is available, commit and push this module with message `release`.
+Keep `TAILSCALE_REF` pinned to
+the CLI commit being published. Matching version tags can also trigger releases.
 The full package builds directly from source and has no release-download dependency.
 
 ## Local builds
