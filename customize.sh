@@ -9,27 +9,16 @@
 	set
 } || true
 
-# Github download helper
-gh_download() {
-	REPO=$1
-	MATCH=$2
-	DOWNLOAD_URL=$(
-		wget --no-check-certificate --timeout=10 -qO- "https://api.github.com/repos/${REPO}/releases/latest" |
-			grep "browser_download_url" |
-			grep "${MATCH}" |
-			sed 's/.*"browser_download_url": "\([^"]*\)".*/\1/' ||
-			true
-	)
-	if [ -z "$DOWNLOAD_URL" ]; then
-		ui_print "! Unable to get release from https://github.com/${REPO}/releases"
-		return 1
-	fi
-	FILENAME=$(basename "$DOWNLOAD_URL")
-	ui_print "- Downloading $FILENAME..."
-	wget --no-check-certificate --timeout=100 -qO "$TMPDIR/$FILENAME" "$DOWNLOAD_URL" || {
-		ui_print "! Download timeout or failed"
-		return 1
-	}
+# Download a pinned release file. Full packages work without network access.
+download_file() {
+    ui_print "- Downloading $(basename "$1")..."
+    wget --timeout=100 -qO "$2" "$1" || abort "Unable to download $1; use the full package for offline installation."
+}
+
+verify_file() {
+    EXPECTED_HASH=$1
+    ACTUAL_HASH=$(sha256sum "$2" | cut -d ' ' -f 1)
+    [ -n "$EXPECTED_HASH" ] && [ "$ACTUAL_HASH" = "$EXPECTED_HASH" ] || abort "SHA256 verification failed: $2"
 }
 
 # shellcheck disable=SC2034
@@ -51,9 +40,14 @@ TS_DIR="/data/adb/tailscale"
 TS_BIN_DIR="$TS_DIR/bin"
 TS_SCRIPTS_DIR="$TS_DIR/scripts"
 
+# This configuration is shipped inside the module zip.
+unzip -p "$ZIPFILE" binaries.env > "$TMPDIR/tailscale-binaries.env" || abort "Missing binary source configuration."
+# shellcheck disable=SC1091
+. "$TMPDIR/tailscale-binaries.env"
+
 case $ARCH in
-arm) F_ARCH="armv7a" ;;
-arm64) F_ARCH="aarch64" ;;
+arm) JQ_ASSET="$JQ_ASSET_ARM"; JQ_HASH="$JQ_SHA256_ARM" ;;
+arm64) JQ_ASSET="$JQ_ASSET_ARM64"; JQ_HASH="$JQ_SHA256_ARM64" ;;
 *)
 	ui_print "Unsupported architecture: $ARCH"
 	abort
@@ -81,19 +75,30 @@ fi
 
 mkdir -p "$TS_BIN_DIR"
 unzip -qqjo "$ZIPFILE" "tailscale/bin/*-$ARCH" -d "$TS_BIN_DIR" 2>/dev/null || true
+unzip -p "$ZIPFILE" tailscale/binaries.sha256 > "$TMPDIR/bundled.sha256" 2>/dev/null || true
 for f in "$TS_BIN_DIR"/*-"$ARCH"; do
-	[ -f "$f" ] && mv "$f" "${f%-"$ARCH"}"
+    if [ -f "$f" ]; then
+        EXPECTED=$(awk -v name="$(basename "$f")" '$2 == name {print $1}' "$TMPDIR/bundled.sha256")
+        verify_file "$EXPECTED" "$f"
+        mv "$f" "${f%-"$ARCH"}"
+    fi
 done
 
-[ -f "$TS_BIN_DIR/tailscaled" ] || {
-	gh_download "anasfanani/tailscale-android-cli" "tailscale_.*_${ARCH}\.tgz" || abort "error: Unable to download."
-	tar -xzf "$TMPDIR/$FILENAME" -C $TS_BIN_DIR || abort "error: Unable extract archive."
-}
+if [ ! -f "$TS_BIN_DIR/tailscaled" ]; then
+    BASE_URL="https://github.com/$TAILSCALE_REPO/releases/download/$TAILSCALE_TAG"
+    FILENAME="tailscale_${TAILSCALE_VERSION}_${ARCH}.tgz"
+    download_file "$BASE_URL/SHA256SUMS" "$TMPDIR/tailscale.sha256"
+    download_file "$BASE_URL/$FILENAME" "$TMPDIR/$FILENAME"
+    EXPECTED=$(awk -v name="$FILENAME" '$2 == name {print $1}' "$TMPDIR/tailscale.sha256")
+    verify_file "$EXPECTED" "$TMPDIR/$FILENAME"
+    tar -xzf "$TMPDIR/$FILENAME" -C "$TS_BIN_DIR" tailscaled || abort "Unable to extract tailscaled."
+fi
 
-[ -f "$TS_BIN_DIR/jq" ] || {
-	gh_download "theshoqanebi/jq-build-for-android" "jq-${F_ARCH}-linux-android" || abort "error: Unable to download."
-	mv -f "$TMPDIR/$FILENAME" "$TS_BIN_DIR/jq" || abort "error: Unable to move file."
-}
+if [ ! -f "$TS_BIN_DIR/jq" ]; then
+    download_file "https://github.com/$JQ_REPO/releases/download/$JQ_TAG/$JQ_ASSET" "$TMPDIR/jq"
+    verify_file "$JQ_HASH" "$TMPDIR/jq"
+    mv -f "$TMPDIR/jq" "$TS_BIN_DIR/jq" || abort "Unable to install jq."
+fi
 
 ui_print "- Extracting files..."
 unzip -qqo "$ZIPFILE" -x 'META-INF/*' 'tailscale/*' -d "$MODPATH"

@@ -1,3 +1,5 @@
 build/
 dist/
 tailscale/bin/
+__pycache__/
+*.pyc

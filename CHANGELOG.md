@@ -1,3 +1,11 @@
+## v2.1.0.0
+
+- Migrate downloads, updates and maintenance to zym013579.
+- Build Android binaries from the pinned Tailscale v1.102.4 Android fork.
+- Add main/PR/manual builds and tag releases using GitHub Actions.
+- Verify binary architecture and downloads; package from an explicit file list.
+- Preserve the local userspace networking and localhost SOCKS5 configuration.
+
 ## v2.0.0.1
 
 - 429e1b0 build: fix version bump and add pre-release for build version

@@ -356,7 +356,7 @@ _log(){
 }
 _troubleshoot(){
   echo "${red}Not yet ready!${normal}";
-  echo "${orange}Solution: ${yellow}Join telegram group at: [ ${green}https://t.me/systembinsh/158${normal} ${yellow}]${normal}";
+  echo "${orange}Solution: ${yellow}Report issues at: [ ${green}https://github.com/zym013579/magisk-tailscaled/issues${normal} ${yellow}]${normal}";
 }
 usage(){
     cmd="$1"
