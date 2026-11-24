@@ -1,3 +1,10 @@
+## v2.2.0.0
+
+- Rebase the pinned Android source on upstream Tailscale v1.104.7.
+- Re-enable the Tailscale SSH server files that upstream split out, keeping Android in the build tags.
+- Keep the local userspace networking and localhost SOCKS5 daemon arguments unchanged.
+- Refresh module manifests to v2.2.0.0 (versionCode 2020000).
+
 ## v2.1.0.0
 
 - Migrate downloads, updates and maintenance to zym013579.

@@ -5,15 +5,15 @@
 Magisk/KernelSU module for running Tailscale on rooted Android, maintained by
 **zym013579**. Based on anasfanani's module and the Android adaptations in
 [zym013579/tailscale-android-cli](https://github.com/zym013579/tailscale-android-cli).
-The current module is **v2.1.0.0**, based on **Tailscale v1.102.4**.
+The current module is **v2.2.0.0**, based on **Tailscale v1.104.7**.
 
 ## Install
 
 Download from [Releases](https://github.com/zym013579/magisk-tailscaled/releases):
 
-- `Magisk-Tailscaled-v2.1.0.0-full.zip`: recommended; includes ARMv7 and ARM64
+- `Magisk-Tailscaled-v2.2.0.0-full.zip`: recommended; includes ARMv7 and ARM64
   tailscaled and jq binaries, so installation works offline.
-- `Magisk-Tailscaled-v2.1.0.0.zip`: lightweight; downloads the pinned Android
+- `Magisk-Tailscaled-v2.2.0.0.zip`: lightweight; downloads the pinned Android
   release from your fork and verifies checksums during installation.
 
 Install through Magisk or KernelSU Manager, then reboot. Existing state files are
@@ -66,7 +66,7 @@ and manual dispatch. It:
 3. Verifies ELF metadata and pinned jq downloads.
 4. Packages and tests both installation zips and uploads workflow artifacts.
 5. Publishes the latest Release when a main push's latest commit message contains
-   `release` (case-insensitive), on a matching `v2.1.0.0` tag, or manual `publish=true`.
+   `release` (case-insensitive), on a matching `v2.2.0.0` tag, or manual `publish=true`.
 
 No personal access token is required. The workflow uses `GITHUB_TOKEN` for releases.
 Pushes without `release` in the latest commit message and PRs only build artifacts.
